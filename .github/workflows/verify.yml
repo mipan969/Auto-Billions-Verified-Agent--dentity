@@ -1,0 +1,32 @@
+name: Billions Agent Verification
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: |
+          npm install -g clawhub@latest
+          npx clawhub install verified-agent-identity
+          cd skills/verified-agent-identity/scripts
+          npm install
+
+      - name: Run Identity Flow
+        run: |
+          cd skills/verified-agent-identity/scripts
+          AGENT_DID=$(node createNewEthereumIdentity.js | tail -n 1)
+          echo "AGENT_DID=$AGENT_DID"
+          CHALLENGE=$(node generateChallenge.js --did $AGENT_DID | tail -n 1)
+          echo "CHALLENGE=$CHALLENGE"
+          node linkHumanToAgent.js --did $AGENT_DID --challenge $CHALLENGE
